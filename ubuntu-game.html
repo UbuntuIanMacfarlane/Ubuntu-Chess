@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Ubuntu — I am because we are</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:#0d1117;font-family:'Space Grotesk',sans-serif;color:#fff;overflow:hidden;}
+body{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+
+#splash{position:fixed;inset:0;background:#0d1117;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;padding:32px;}
+#splash canvas{display:block;margin-bottom:32px;}
+.splash-tag{font-size:11px;letter-spacing:0.12em;color:#4ecdc4;margin-bottom:8px;font-weight:500;}
+.splash-title{font-size:52px;font-weight:700;color:#e8c97a;line-height:1;margin-bottom:6px;text-align:center;}
+.splash-sub{font-size:14px;color:rgba(232,201,122,0.45);margin-bottom:36px;text-align:center;}
+.splash-origin{font-size:11px;color:rgba(78,205,196,0.45);margin-bottom:32px;letter-spacing:0.06em;text-align:center;}
+.splash-btn{background:#e8c97a;color:#0d1117;border:none;border-radius:12px;padding:16px 40px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;letter-spacing:0.02em;transition:transform 0.1s;}
+.splash-btn:active{transform:scale(0.97);}
+.splash-note{font-size:11px;color:rgba(255,255,255,0.2);margin-top:16px;text-align:center;}
+
+#game{display:none;flex-direction:column;width:100%;height:100vh;max-width:480px;}
+
+.hud{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 6px;flex-shrink:0;}
+.hud-left{display:flex;flex-direction:column;gap:1px;}
+.now-label{font-size:9px;letter-spacing:0.1em;color:rgba(255,255,255,0.3);font-weight:500;}
+.now-piece{font-size:17px;font-weight:700;transition:color 0.3s;}
+.hud-right{text-align:right;}
+.h-label{font-size:9px;color:rgba(255,255,255,0.3);margin-bottom:3px;}
+.h-bar{width:88px;height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden;margin-left:auto;margin-bottom:3px;}
+.h-fill{height:100%;border-radius:2px;background:#4ecdc4;transition:width 0.6s cubic-bezier(0.4,0,0.2,1);}
+.h-pct{font-size:14px;font-weight:700;color:#4ecdc4;}
+
+#cv{display:block;width:100%;flex:1;cursor:pointer;}
+
+.info{padding:7px 16px;min-height:34px;display:flex;align-items:center;gap:7px;flex-shrink:0;}
+.info-dot{width:5px;height:5px;border-radius:50%;background:#4ecdc4;flex-shrink:0;transition:background 0.3s;}
+.info-txt{font-size:11px;color:rgba(255,255,255,0.5);line-height:1.4;}
+
+.btns{display:flex;gap:8px;padding:0 16px;flex-shrink:0;}
+.btn{flex:1;background:#141d2a;border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:9px 4px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.5);cursor:pointer;font-family:inherit;letter-spacing:0.04em;transition:all 0.15s;}
+.btn.on{background:#0e2820;border-color:#4ecdc4;color:#4ecdc4;}
+.btn:active{transform:scale(0.97);}
+
+.bonds{display:flex;gap:6px;padding:8px 16px 12px;overflow-x:auto;flex-shrink:0;-webkit-overflow-scrolling:touch;}
+.bond-chip{flex-shrink:0;background:#141d2a;border:1px solid rgba(255,255,255,0.06);border-radius:20px;padding:4px 10px;font-size:9px;color:rgba(255,255,255,0.35);white-space:nowrap;}
+.bond-chip.lit{border-color:rgba(232,201,122,0.4);color:#e8c97a;}
+
+.overlay{display:none;position:fixed;inset:0;background:rgba(13,17,23,0.95);align-items:center;justify-content:center;flex-direction:column;gap:14px;text-align:center;padding:32px;z-index:50;}
+.overlay.show{display:flex;}
+.ov-glyph{font-size:48px;color:#e8c97a;}
+.ov-title{font-size:30px;font-weight:700;color:#e8c97a;line-height:1.1;}
+.ov-sub{font-size:13px;color:rgba(255,255,255,0.4);max-width:260px;line-height:1.6;}
+.ov-stat{font-size:22px;font-weight:700;color:#4ecdc4;}
+.ov-btn{background:#e8c97a;color:#0d1117;border:none;border-radius:10px;padding:13px 32px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;margin-top:4px;}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <canvas id="splash-cv" width="220" height="120"></canvas>
+  <div class="splash-tag">connection is the game</div>
+  <div class="splash-title">Ubuntu</div>
+  <div class="splash-sub">I am because we are</div>
+  <div class="splash-origin">Made in Cape Town · Rooted in Ubuntu philosophy</div>
+  <button class="splash-btn" onclick="startGame()">play now</button>
+  <div class="splash-note">No captures · No kings · Win by connecting</div>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="now-label">now moving</div>
+      <div class="now-piece" id="now-piece">seeker</div>
+    </div>
+    <div class="hud-right">
+      <div class="h-label">harmony</div>
+      <div class="h-bar"><div class="h-fill" id="h-fill" style="width:0%"></div></div>
+      <div class="h-pct" id="h-pct">0%</div>
+    </div>
+  </div>
+  <canvas id="cv"></canvas>
+  <div class="info">
+    <div class="info-dot" id="info-dot"></div>
+    <div class="info-txt" id="info-txt">Tap a piece of the current type, then tap a neighbouring hex to move it.</div>
+  </div>
+  <div class="btns">
+    <button class="btn" id="bond-btn" onclick="toggleBond()">bond ✦</button>
+    <button class="btn" onclick="pulseAll()">pulse ↺</button>
+    <button class="btn" onclick="resetGame()">reset</button>
+  </div>
+  <div class="bonds" id="bonds-strip">
+    <div class="bond-chip">no bonds yet</div>
+  </div>
+</div>
+
+<!-- WIN OVERLAY -->
+<div class="overlay" id="win-ov">
+  <div class="ov-glyph">✦</div>
+  <div class="ov-title">Ubuntu<br>achieved</div>
+  <div class="ov-stat" id="win-stat"></div>
+  <div class="ov-sub">The web is whole. All pieces connected. The Ubuntu Mage awakens.</div>
+  <button class="ov-btn" onclick="resetGame()">play again</button>
+</div>
+
+<script>
+// ── palette
+const C = {
+  night:'#0d1117', earth:'#e8c97a', teal:'#4ecdc4',
+  violet:'#c77dff', amber:'#ff9f1c'
+};
+const PC = {seeker:C.violet, grounded:C.teal, radiant:C.amber, bridge:C.earth};
+const ORDER = ['seeker','grounded','radiant','bridge'];
+
+function rgba(h,a){
+  const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ── hex grid
+const HR = 22, HH = HR * Math.sqrt(3);
+const COLS = 8, ROWS = 6;
+
+function hexCtr(col, row, ox, oy){
+  return [ox + col*HR*1.54, oy + row*HH + (col%2)*HH/2];
+}
+
+function drawHexPath(ctx, cx, cy, r){
+  ctx.beginPath();
+  for(let i=0;i<6;i++){
+    const a = Math.PI/6 + i*Math.PI/3;
+    i===0 ? ctx.moveTo(cx+r*Math.cos(a), cy+r*Math.sin(a))
+           : ctx.lineTo(cx+r*Math.cos(a), cy+r*Math.sin(a));
+  }
+  ctx.closePath();
+}
+
+function hexDist(c1,r1,c2,r2,ox,oy){
+  const [x1,y1]=hexCtr(c1,r1,ox,oy), [x2,y2]=hexCtr(c2,r2,ox,oy);
+  return Math.sqrt((x1-x2)**2+(y1-y2)**2);
+}
+
+function hexNeighbors(col,row){
+  const dirs = col%2===0
+    ? [[1,0],[-1,0],[0,-1],[0,1],[1,-1],[-1,-1]]
+    : [[1,0],[-1,0],[0,-1],[0,1],[1,1],[-1,1]];
+  return dirs.map(([dc,dr])=>[col+dc,row+dr])
+             .filter(([c,r])=>c>=0&&c<COLS&&r>=0&&r<ROWS);
+}
+
+function cellFree(col,row,skip=-1){
+  return !pieces.some((p,i)=>i!==skip&&p.col===col&&p.row===row);
+}
+
+// ── state
+let pieces=[], bonds=[], selected=null, bondMode=false, turnIdx=0;
+let particles=[], t=0, animId=null;
+let ox=0, oy=0, cvW=0, cvH=0;
+
+const DEFS = [
+  {type:'seeker',col:1,row:0},{type:'grounded',col:3,row:0},{type:'radiant',col:5,row:0},{type:'bridge',col:7,row:0},
+  {type:'grounded',col:0,row:2},{type:'seeker',col:2,row:2},{type:'bridge',col:4,row:2},{type:'radiant',col:6,row:2},
+  {type:'radiant',col:1,row:4},{type:'bridge',col:3,row:4},{type:'seeker',col:5,row:4},{type:'grounded',col:7,row:4},
+];
+
+function initGame(){
+  pieces = DEFS.map((d,i)=>({...d,id:i,power:1}));
+  bonds=[]; selected=null; bondMode=false; turnIdx=0; particles=[];
+  document.getElementById('bond-btn').classList.remove('on');
+  updateBonds();
+  updateHUD();
+  document.getElementById('win-ov').classList.remove('show');
+  setInfo('Tap a piece of the current type. Highlighted hexes show where it can move.','#4ecdc4');
+}
+
+function currentType(){ return ORDER[turnIdx%4]; }
+function advanceTurn(){ turnIdx++; updateHUD(); }
+
+function updatePowers(){
+  pieces.forEach(p=>p.power=1);
+  for(let i=0;i<pieces.length;i++){
+    for(let j=i+1;j<pieces.length;j++){
+      if(hexDist(pieces[i].col,pieces[i].row,pieces[j].col,pieces[j].row,ox,oy)<HH*1.25){
+        pieces[i].power=Math.min(5,pieces[i].power+1);
+        pieces[j].power=Math.min(5,pieces[j].power+1);
+      }
+    }
+  }
+  bonds.forEach(([i,j])=>{
+    if(pieces[i]) pieces[i].power=Math.min(5,pieces[i].power+2);
+    if(pieces[j]) pieces[j].power=Math.min(5,pieces[j].power+2);
+  });
+}
+
+function calcHarmony(){
+  updatePowers();
+  const total=pieces.reduce((s,p)=>s+p.power,0);
+  return Math.min(100,Math.round((total/(pieces.length*5))*100));
+}
+
+function updateHUD(){
+  const ct=currentType();
+  const el=document.getElementById('now-piece');
+  el.textContent=ct; el.style.color=PC[ct];
+  const h=calcHarmony();
+  document.getElementById('h-fill').style.width=h+'%';
+  document.getElementById('h-pct').textContent=h+'%';
+  if(h>=80) setTimeout(showWin,400);
+}
+
+function setInfo(msg,col='#4ecdc4'){
+  document.getElementById('info-txt').textContent=msg;
+  document.getElementById('info-dot').style.background=col;
+}
+
+function toggleBond(){
+  bondMode=!bondMode; selected=null;
+  document.getElementById('bond-btn').classList.toggle('on',bondMode);
+  setInfo(bondMode?'Bond mode: tap two pieces to form a permanent bond.':'Move mode active.', bondMode?C.amber:C.teal);
+}
+
+function pulseAll(){
+  pieces.forEach(p=>{
+    const [cx,cy]=hexCtr(p.col,p.row,ox,oy);
+    for(let k=0;k<8;k++) particles.push({x:cx,y:cy,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:55,col:PC[p.type]});
+  });
+  setInfo('Ubuntu pulse — shared energy ripples across all connections.');
+}
+
+function showWin(){
+  const h=calcHarmony();
+  document.getElementById('win-stat').textContent=h+'% harmony';
+  document.getElementById('win-ov').classList.add('show');
+}
+
+function updateBonds(){
+  const strip=document.getElementById('bonds-strip');
+  if(!bonds.length){strip.innerHTML='<div class="bond-chip">no bonds yet</div>';return;}
+  strip.innerHTML=bonds.map(([i,j])=>
+    `<div class="bond-chip lit">${pieces[i]?.type??'?'} ✦ ${pieces[j]?.type??'?'}</div>`
+  ).join('');
+}
+
+function resetGame(){
+  if(animId) cancelAnimationFrame(animId);
+  initGame();
+  loop();
+}
+
+// ── canvas tap
+function onTap(e){
+  e.preventDefault();
+  const cv=document.getElementById('cv');
+  const rect=cv.getBoundingClientRect();
+  const touch=e.touches?e.touches[0]:e;
+  const mx=(touch.clientX-rect.left)*(cvW/rect.width);
+  const my=(touch.clientY-rect.top)*(cvH/rect.height);
+
+  let hitP=-1; let bestD=HR*0.9;
+  pieces.forEach((p,i)=>{
+    const [cx,cy]=hexCtr(p.col,p.row,ox,oy);
+    const d=Math.hypot(mx-cx,my-cy);
+    if(d<bestD){bestD=d;hitP=i;}
+  });
+
+  let hitC=-1,hitR=-1;
+  if(hitP<0){
+    let best=HR;
+    for(let c=0;c<COLS;c++) for(let r=0;r<ROWS;r++){
+      const [cx,cy]=hexCtr(c,r,ox,oy);
+      const d=Math.hypot(mx-cx,my-cy);
+      if(d<HR&&d<best){best=d;hitC=c;hitR=r;}
+    }
+  }
+
+  if(bondMode){
+    if(hitP>=0){
+      if(selected===null){
+        selected=hitP;
+        setInfo(`${pieces[hitP].type} chosen. Tap another piece to bond.`,PC[pieces[hitP].type]);
+      } else if(selected!==hitP){
+        const a=Math.min(selected,hitP),b=Math.max(selected,hitP);
+        if(!bonds.some(([x,y])=>x===a&&y===b)){
+          bonds.push([a,b]);
+          setInfo(`Bond: ${pieces[a].type} ✦ ${pieces[b].type} — permanent!`,C.earth);
+          updateBonds(); updateHUD();
+        } else setInfo('Already bonded.',C.amber);
+        selected=null;
+      }
+    }
+    return;
+  }
+
+  if(hitP>=0){
+    const p=pieces[hitP];
+    if(p.type!==currentType()){
+      setInfo(`It's the ${currentType()}'s turn.`,PC[currentType()]);return;
+    }
+    selected=hitP;
+    setInfo(`${p.type} selected (power ${p.power}). Tap a glowing hex to move.`,PC[p.type]);
+  } else if(selected!==null&&hitC>=0){
+    const p=pieces[selected];
+    const nbrs=hexNeighbors(p.col,p.row);
+    if(nbrs.some(([c,r])=>c===hitC&&r===hitR)&&cellFree(hitC,hitR,selected)){
+      const [cx,cy]=hexCtr(p.col,p.row,ox,oy),[nx,ny]=hexCtr(hitC,hitR,ox,oy);
+      const mx2=(cx+nx)/2,my2=(cy+ny)/2;
+      for(let k=0;k<6;k++) particles.push({x:mx2,y:my2,vx:(Math.random()-0.5)*5,vy:(Math.random()-0.5)*5,life:40,col:PC[p.type]});
+      p.col=hitC; p.row=hitR;
+      updatePowers();
+      setInfo(`${p.type} moved — power ${p.power}.${p.power>=3?' Resonating!':''}`,PC[p.type]);
+      selected=null; advanceTurn();
+    } else {
+      setInfo('Move to an adjacent empty hex.',rgba(C.amber,1));
+    }
+  } else { selected=null; }
+}
+
+// ── render
+function loop(){
+  const cv=document.getElementById('cv');
+  const ctx=cv.getContext('2d');
+  cvW=cv.width; cvH=cv.height;
+
+  // offsets to centre grid
+  const gridW=(COLS-1)*HR*1.54+HR*2;
+  const gridH=(ROWS-1)*HH+HH;
+  ox=(cvW-gridW)/2+HR;
+  oy=(cvH-gridH)/2+HH*0.5;
+
+  ctx.clearRect(0,0,cvW,cvH);
+  ctx.fillStyle=C.night; ctx.fillRect(0,0,cvW,cvH);
+
+  // grid
+  for(let c=0;c<COLS;c++) for(let r=0;r<ROWS;r++){
+    const [cx,cy]=hexCtr(c,r,ox,oy);
+    const selPiece=selected!==null?pieces[selected]:null;
+    const isNbr=selPiece&&!bondMode&&hexNeighbors(selPiece.col,selPiece.row).some(([nc,nr])=>nc===c&&nr===r)&&cellFree(c,r,selected);
+    drawHexPath(ctx,cx,cy,HR-2);
+    ctx.fillStyle=isNbr?rgba(C.teal,0.14):rgba('#1a2a3a',0.45);
+    ctx.fill();
+    ctx.strokeStyle=isNbr?rgba(C.teal,0.5):rgba(C.teal,0.07);
+    ctx.lineWidth=isNbr?1.2:0.5; ctx.stroke();
+  }
+
+  // adjacent connection web
+  updatePowers();
+  for(let i=0;i<pieces.length;i++) for(let j=i+1;j<pieces.length;j++){
+    if(hexDist(pieces[i].col,pieces[i].row,pieces[j].col,pieces[j].row,ox,oy)<HH*1.25){
+      const [x1,y1]=hexCtr(pieces[i].col,pieces[i].row,ox,oy);
+      const [x2,y2]=hexCtr(pieces[j].col,pieces[j].row,ox,oy);
+      ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+      ctx.strokeStyle=rgba(C.teal,0.15+0.08*Math.sin(t*0.04+i));
+      ctx.lineWidth=0.8; ctx.stroke();
+    }
+  }
+
+  // bonds
+  bonds.forEach(([i,j])=>{
+    if(!pieces[i]||!pieces[j]) return;
+    const [x1,y1]=hexCtr(pieces[i].col,pieces[i].row,ox,oy);
+    const [x2,y2]=hexCtr(pieces[j].col,pieces[j].row,ox,oy);
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2);
+    ctx.strokeStyle=rgba(C.earth,0.35+0.12*Math.sin(t*0.05+i));
+    ctx.lineWidth=1.5; ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+    const mx=(x1+x2)/2,my=(y1+y2)/2;
+    ctx.beginPath(); ctx.arc(mx,my,2.5,0,Math.PI*2);
+    ctx.fillStyle=rgba(C.earth,0.8); ctx.fill();
+  });
+
+  // pieces
+  pieces.forEach((p,i)=>{
+    const [cx,cy]=hexCtr(p.col,p.row,ox,oy);
+    const pulse=Math.sin(t*0.035+i*1.3);
+    const isSel=selected===i;
+    const col=PC[p.type];
+    const ar=8+p.power*2.2+pulse*1.5+(isSel?5:0);
+    ctx.beginPath(); ctx.arc(cx,cy,ar,0,Math.PI*2);
+    ctx.fillStyle=rgba(col,0.1+p.power*0.025+(isSel?0.12:0)); ctx.fill();
+    if(p.power>=3||isSel){
+      ctx.beginPath(); ctx.arc(cx,cy,ar+3,0,Math.PI*2);
+      ctx.strokeStyle=rgba(col,0.18); ctx.lineWidth=1; ctx.stroke();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,7.5,0,Math.PI*2);
+    ctx.fillStyle=rgba(col,0.28); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,5.5,0,Math.PI*2);
+    ctx.fillStyle=col; ctx.fill();
+    if(isSel){
+      ctx.beginPath(); ctx.arc(cx,cy,9,0,Math.PI*2);
+      ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    ctx.fillStyle='rgba(0,0,0,0.75)';
+    ctx.font='bold 8px "Space Grotesk",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(p.power,cx,cy);
+  });
+
+  // particles
+  particles=particles.filter(p=>p.life>0);
+  particles.forEach(p=>{
+    const a=p.life/55;
+    ctx.beginPath(); ctx.arc(p.x,p.y,2.5*a,0,Math.PI*2);
+    ctx.fillStyle=rgba(p.col,a*0.85); ctx.fill();
+    p.x+=p.vx; p.y+=p.vy; p.vx*=0.92; p.vy*=0.92; p.life--;
+  });
+
+  t++;
+  animId=requestAnimationFrame(loop);
+}
+
+// ── splash animation
+(function splashAnim(){
+  const sc=document.getElementById('splash-cv');
+  const sctx=sc.getContext('2d');
+  const SW=220,SH=120;
+  const nodes=[
+    {x:40,y:60,col:C.violet},{x:90,y:30,col:C.teal},
+    {x:110,y:80,col:C.amber},{x:155,y:45,col:C.earth},
+    {x:180,y:85,col:C.violet},{x:70,y:95,col:C.teal}
+  ];
+  const edges=[[0,1],[1,2],[2,3],[3,4],[0,2],[1,3],[2,5],[4,3]];
+  let st=0;
+  function drawSplash(){
+    sctx.clearRect(0,0,SW,SH);
+    sctx.fillStyle=C.night; sctx.fillRect(0,0,SW,SH);
+    edges.forEach(([a,b])=>{
+      const pa=nodes[a],pb=nodes[b];
+      const pulse=0.25+0.12*Math.sin(st*0.04+a);
+      sctx.beginPath(); sctx.moveTo(pa.x,pa.y); sctx.lineTo(pb.x,pb.y);
+      sctx.strokeStyle=rgba(C.teal,pulse); sctx.lineWidth=1; sctx.stroke();
+    });
+    nodes.forEach((n,i)=>{
+      const p=Math.sin(st*0.03+i*1.1);
+      sctx.beginPath(); sctx.arc(n.x,n.y,7+p*1.5,0,Math.PI*2);
+      sctx.fillStyle=rgba(n.col,0.12); sctx.fill();
+      sctx.beginPath(); sctx.arc(n.x,n.y,5,0,Math.PI*2);
+      sctx.fillStyle=n.col; sctx.fill();
+    });
+    st++;
+    if(document.getElementById('splash').style.display!=='none') requestAnimationFrame(drawSplash);
+  }
+  drawSplash();
+})();
+
+// ── start
+function startGame(){
+  document.getElementById('splash').style.display='none';
+  const gameEl=document.getElementById('game');
+  gameEl.style.display='flex';
+  const cv=document.getElementById('cv');
+  function resize(){
+    cv.width=cv.offsetWidth;
+    cv.height=cv.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize',resize);
+  cv.addEventListener('click',onTap);
+  cv.addEventListener('touchstart',onTap,{passive:false});
+  initGame();
+  loop();
+}
+</script>
+</body>
+</html>
